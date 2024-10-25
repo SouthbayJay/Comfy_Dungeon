@@ -11,7 +11,7 @@
 	<body>
     <!-- LEFT BAR -->
     <aside id="left-col" class="uk-light uk-visible@m">
-      <h4 class="uk-text-center uk-margin-remove-vertical text-light">Comfy Dungeon<small><sup> v0.1.1</sup></small></h4>
+      <h4 class="uk-text-center uk-margin-remove-vertical text-light">SouthbayJay's Dungeon<small><sup> v1.0</sup></small></h4>
 
       <div class="left-content-box left-nav-wrap">
         <form class="uk-grid-small">
@@ -28,12 +28,18 @@
 
                 <div class="uk-width-1-2@s">
                   <label class="uk-form-label" for="batch-size-input">Results per generation</label>
-                  <input class="uk-range" id="batch-size-input" type="range" value="1" min="1" max="4" step="1" aria-label="Range" list="batch-size-values">
+                  <input class="uk-range" id="batch-size-input" type="range" value="1" min="1" max="10" step="1" aria-label="Range" list="batch-size-values">
                   <datalist id="batch-size-values" class="uk-form-label uk-text-muted">
                     <option value="0" label="1"></option>
                     <option value="33" label="2"></option>
                     <option value="66" label="3"></option>
                     <option value="100" label="4"></option>
+                    <option value="133" label="5"></option>
+                    <option value="166" label="6"></option>
+                    <option value="200" label="7"></option>
+                    <option value="233" label="8"></option>
+                    <option value="266" label="9"></option>
+                    <option value="300" label="10"></option>
                   </datalist>
                 </div>
 
@@ -45,7 +51,7 @@
                       <option value="ProteusV0.3" selected>Illustration - Accurate</option>
                       <option value="ProteusV0.3-LCM-Anime">Anime - Fast</option>
                       <option value="ProteusV0.3-Anime">Anime - Accurate</option>
-                      <option value="DreamShaperXLTurboV2-Cinematic">Cinematic</option>
+                      <option value="FluxSchnell-Cinematic">Cinematic</option>  <!-- Changed from DreamShaperXLTurboV2-Cinematic -->
                     </select>
                   </div>
                 </div>  
@@ -317,8 +323,8 @@
     </aside>
     <!-- /LEFT BAR -->
   
-    <!-- CONTENT -->
-    <div id="content" class="uk-light" data-uk-height-viewport="expand: true">
+     <!-- CONTENT -->
+     <div id="content" class="uk-light" data-uk-height-viewport="expand: true">
       <progress id="main-progress" class="progress" value="0" max="0"></progress>
 
       <div class="uk-text-center uk-container uk-container-expand">

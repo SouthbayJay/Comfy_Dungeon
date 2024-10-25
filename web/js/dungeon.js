@@ -40,7 +40,7 @@
             let response = await fetch(wf[key]);
             wf[key] = await response.json();
         }
-
+        console.log("Loaded workflows:", wf); // Debug log
         return wf;
     }
     const workflows = await load_api_workflows();
@@ -58,7 +58,7 @@
         response = await response.json();
         let checkpoints = response['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0];
         const checkpoints_regex = {
-            'DreamShaperXLTurboV2': /.*dreamshaper.*xl.*turbo.*v2.*\.safetensors$/gi,
+            'FluxSchnell': /.*flux.*schnell.*fp8\.safetensors$/gi,
             'ProteusV0.3': /.*proteus.*0\.3.*\.safetensors$/gi,
         };
         let available_checkpoints = {};
@@ -178,304 +178,99 @@
     roll.addEventListener('click', async (event) => {
         if (IS_GENERATING) {
             await interrupt();
-        } else {      
-            let wf = structuredClone(workflows['basic_portrait']);
-            let base_steps = 14;        // minimum number of steps
-            let step_increment = 14;    // number of steps multiplied by the quality factor
-            let sampler_name = 'dpmpp_2m';
-            let scheduler = 'exponential';
-            let CFG = 6.5;
+            return;
+        }
 
+        IS_GENERATING = true;
+        toggleDisplay(spinner, IS_GENERATING);
+        toggleDisplay(roll_icon, !IS_GENERATING);
+        
+        try {
+            let wf = structuredClone(workflows['basic_portrait']);
             let model = style_input.options[style_input.selectedIndex].value;
+            console.log("Selected model:", model); // Debug log
+
+            // Process model flags
+            let is_cinematic = model.includes('-Cinematic');
+            let is_anime = model.includes('-Anime');
+            let is_LCM = model.includes('-LCM');
+            let is_Turbo = model.includes('Turbo');
+
+            // Clean up model name
+            model = model
+                .replace('-LCM', '')
+                .replace('-Anime', '')
+                .replace('-Cinematic', '')
+                .replace('Turbo', '');
+
+            console.log("Cleaned model name:", model); // Debug log
+            console.log("Available checkpoints:", available_checkpoints); // Debug log
+
+            // Verify checkpoint exists
+            if (!available_checkpoints[model]) {
+                throw new Error(`Checkpoint not found for model: ${model}`);
+            }
+
+            // Set the checkpoint
+            wf['30']['inputs']['ckpt_name'] = available_checkpoints[model];
+            
+            // Set default parameters
+            let base_steps = 4;        
+            let step_increment = 8;    
+            let sampler_name = 'euler';
+            let scheduler = 'beta';
+            let CFG = 1;
+
+            // Get random seed if needed
+            let rndseed = is_random_input.checked ? seed() : parseInt(seed_input.value);
+            console.log("Using seed:", rndseed); // Debug log
+
+            // Update workflow parameters
+            wf['31']['inputs']["sampler_name"] = sampler_name;
+            wf['31']['inputs']["scheduler"] = scheduler;    
+            wf['31']['inputs']['seed'] = rndseed;
+            wf['31']['inputs']['steps'] = base_steps + Math.round(quality_input.value * step_increment);
+            wf['31']['inputs']['cfg'] = CFG;
+            wf['27']['inputs']['batch_size'] = batch_size_input.value;
+
+            // Process prompts
             let positive = positive_template;
             let negative = negative_template;
-            let setting = setting_input.options[setting_input.selectedIndex].value;
-            let body_structure = body_structure_input.value;
-            let race = race_input.options[race_input.selectedIndex].value;
-            let race_helper = '';
-            let negative_race = '';
-            let age = age_input.value;
-            let gender = gender_input.value;
-            let negative_gender = '';
-            let dndclass = class_input.options[class_input.selectedIndex].value;
-            let gear = gear_input.options[gear_input.selectedIndex].value;
-            let haircolor = haircolor_input.options[haircolor_input.selectedIndex].value;
-            let hairstyle = hairstyle_input.options[hairstyle_input.selectedIndex].value;
-            let background = background_input.options[background_input.selectedIndex].value;
-            let mood = mood_input.options[mood_input.selectedIndex].value;
-            let atmosphere = atmosphere_input.options[atmosphere_input.selectedIndex].value;
-            let ethnicity_id = ethnicity_input.options[ethnicity_input.selectedIndex].value;
-            let custom_prompt = custom_input.value;
-            let ethnic_bias = '';
-            let negative_background = '';
-            let style = '';
-            let nagative_style = '';
-            let is_cinematic = false;
+            
+            // Set style based on flags
+            let style = is_cinematic ? 'film still cinematic photo' :
+                       is_anime ? 'anime illustration' :
+                       'illustration digital painting';
+            let negative_style = is_cinematic ? 'illustration, anime, cosplay, ' :
+                                is_anime ? 'photo, fanart, ' :
+                                'photo, anime, ';
 
-            // seed number
-            let rndseed = seed_input.value
-            if ( is_random_input.checked ) {
-                rndseed = seed();
-                seed_input.value = rndseed;
-            }
-            let localrand = seededRandom(rndseed);
-
-            // Style
-            if ( model.includes('-Cinematic') ) {
-                style = 'film still cinematic photo'
-                nagative_style = 'illustration, anime, cosplay, ';
-                is_cinematic = true;
-            } else if ( model.includes('-Anime') ) {
-                style = 'anime illustration'
-                nagative_style = 'photo, fanart, ';
-            } else {
-                style = 'illustration digital painting'
-                nagative_style = 'photo, anime, ';
-            }
+            // Update prompts
             positive = positive.replace('{{STYLE}}', style);
-            negative = negative.replace('{{STYLE}}', nagative_style);
+            negative = negative.replace('{{STYLE}}', negative_style);
 
-            // Setting
-            if ( setting === 'fantasy' ) {
-                positive = positive.replace('{{SETTING}}', 'fantasy');
-                if ( is_cinematic ) {
-                    positive = positive.replace('{{SETTING_HELPER}}', ', (D&D:1.1), Lord of the rings');
-                } else {
-                    positive = positive.replace('{{SETTING_HELPER}}', ', (D&D:1.1), (Lord of the rings:0.8)');
-                }
-            }
+            // Set the prompts in workflow
+            wf['6']['inputs']['text'] = positive;
+            wf['33']['inputs']['text'] = negative;
 
-            // Body structure
-            if ( body_structure == '0' ) {
-                body_structure = 'slender ';
-            } else if ( body_structure == '1' ) {
-                body_structure = '';
-                if ( race === 'halfling' || race === 'gnome' || race === 'dwarf' ) { body_structure = 'stocky '; }
-            } else if ( body_structure == '2' ) {
-                if ( gender == '0' || gender == '1' ) { body_structure = 'strong muscular '; }
-                else { body_structure = 'strong ';}
-                if ( race === 'halfling' || race === 'gnome' || race === 'dwarf' ) { body_structure = 'stocky ' + body_structure; }
-            } else if ( body_structure == '3' ) {
-                body_structure = 'chubby ';
-                if ( race === 'halfling' || race === 'gnome' || race === 'dwarf' ) { body_structure = 'stocky ' + body_structure; }
-            }
-            positive = positive.replace('{{BODY}}', body_structure);
+            console.log("Final workflow before queue:", wf); // Debug log
 
-            // Race
-            if ( race === 'human') { negative_race = '(elf, long pointy ears:1.2), ' }
-            else if ( race === 'half-elf' || race === 'halfling' ) { race_helper = ' pointy ears.'; }
-            else if ( race === 'elven' ) {
-                // have to use Elven instead of Elf to avoid Christmas contamination
-                negative_race = 'green, beard, ';
-            }
-            positive = positive.replace('{{RACE}}', race);
-            positive = positive.replace('{{RACE_HELPER}}', race_helper);
-            negative = negative.replace('{{RACE}}', negative_race);
-
-            // Age
-            if ( age == '0' ) { age = 'young'; }
-            else if ( age == '1' ) { age = '30yo'; }
-            else if ( age == '2' ) { age = '45yo'; }
-            else if ( age == '3' ) { age = '60yo'; }
-            positive = positive.replace('{{AGE}}', age);
-
-            // Gender
-            if ( gender == '0') { gender = 'female'; negative_gender = 'horror, ' }
-            else if ( gender == '1' ) { gender = '(masculine:1.1) female'; if ( race !== 'elven' ) { negative_gender = 'beard, '}}
-            else if ( gender == '2' ) { gender = '(queer:0.9) feminine male'; negative_gender = 'zombie, beard, ' }
-            else if ( gender == '3' ) { gender = 'male' }
-            positive = positive.replace('{{GENDER}}', gender);
-            negative = negative.replace('{{GENDER}}', negative_gender);
-
-            // Class
-            positive = positive.replace('{{CLASS}}', dndclass);
-
-            // Gear
-            if ( gear !== '' ) {
-                gear = ' wearing ' + gear;
-            }
-            positive = positive.replace('{{GEAR}}', gear);
-
-            // Hair color and hairstyle
-            if ( hairstyle === 'bald' ) {
-                haircolor = '';
-            }
-
-            if ( hairstyle === 'simple braid hairstyle' ) {
-                if ( gender.includes('female') ) {
-                    hairstyle = '(simple braid hairstyle:0.7)';
-                } else {
-                    hairstyle = 'simple braid hairstyle';
-                }
-            }
-
-            if ( haircolor !== '' ) {
-                if ( hairstyle.includes('{{COLOR}}') ) {
-                    haircolor = ' with ' + hairstyle.replace('{{COLOR}}', haircolor + ' ');
-                    hairstyle = '';
-                } else {
-                    haircolor = ' with ' + haircolor + ' hair';
-                }
-            }
-            positive = positive.replace('{{HAIR_COLOR}}', haircolor);
-
-            hairstyle = hairstyle.replace('{{COLOR}}', '');
-            if ( hairstyle !== '' ) {
-                if ( haircolor !== '' ) {
-                    hairstyle = ' and ' + hairstyle;
-                } else {
-                    hairstyle = ' with ' + hairstyle;
-                }
-            }
-            positive = positive.replace('{{HAIRSTYLE}}', hairstyle);
-
-            // Background
-            if ( background !== '' ) {
-                background = ' ' + background + '.'
-                negative_background = 'flat background, ';
-            }
-            positive = positive.replace('{{BACKGROUND}}', background);
-            negative = negative.replace('{{BACKGROUND}}', negative_background);
-
-            // select checkpoint and main workflow
-            let is_LCM = (model.includes('-LCM')) ? true : false;
-            let is_Turbo = (model.includes('Turbo')) ? true : false;
-            model = model.replace('-LCM', '');
-            model = model.replace('-Anime', '');
-            model = model.replace('-Cinematic', '');
-            // lower the number of steps for LCM and Turbo models
-            if ( is_LCM || is_Turbo ) {
-                base_steps = 4;
-                step_increment = 4;
-            }
-            if ( is_LCM ) {
-                wf = structuredClone(workflows['basic_portrait_lcm']);
-                CFG = 2.5;
-                sampler_name = 'lcm';
-                scheduler = 'normal';
-            }
-            if ( is_Turbo ) {
-                CFG = 2;
-            }
-
-            // Atmospere and mood
-            if ( mood !== '' ) {
-                mood = ' ' + mood;
-                atmosphere = ', ' + atmosphere;
-            }
-            positive = positive.replace('{{MOOD}}', mood);
-            positive = positive.replace('{{ATMOSPHERE}}', atmosphere);
-
-            // Ethnicity
-            if ( ethnicity_id !== '' ) {
-                let ethnic1, ethnic2, mainArea1, mainArea2;
-
-                if ( ethnicity_id === '0' ) {
-                    let keys = Object.keys(ethnicities);
-                    mainArea1 = ethnicities[keys[Math.floor(localrand() * keys.length)]];
-                    mainArea2 = ethnicities[keys[Math.floor(localrand() * keys.length)]];
-                } else {
-                    mainArea1 = ethnicities[ethnicity_id];
-                    mainArea2 = ethnicities[ethnicity_id];
-                }
-
-                ethnic1 = mainArea1[Math.floor(localrand()*mainArea1.length)];
-                ethnic2 = mainArea2[Math.floor(localrand()*mainArea2.length)];
-
-                while ( ethnic1 === ethnic2 ) {
-                    ethnic2 = mainArea2[Math.floor(localrand()*mainArea2.length)];
-                }
-
-                console.log('Ethnicity: ' + ethnic1 + ', ' + ethnic2);
-                ethnic_bias = '(' + ethnic1 + ', ' + ethnic2 + ':0.7) ';
-            }
-            positive = positive.replace('{{ETHNICITY}}', ethnic_bias);
-
-            // model specific settings
-            if ( model === 'DreamShaperXLTurboV2' ) {
-                sampler_name = 'dpmpp_sde';
-
-                // Activate CFGRescale for DreamShaperXLTurboV2 that really doesn't want to listen otherwise
-                wf['14'] = {
-                    "inputs": {
-                      "multiplier": 0.7,
-                      "model": [
-                        "1",
-                        0
-                      ]
-                    },
-                    "class_type": "RescaleCFG",
-                    "_meta": {
-                      "title": "RescaleCFG"
-                    }
-                  };
-                wf['7']['inputs']['model'] = ["14", 0];
-                CFG = 4;
-                base_steps = 6;
-                scheduler = 'karras';
-            }
-
-            // custom input
-            if ( custom_prompt !== '' ) {
-                wf["20"] = {
-                    "inputs": {
-                      "width": 1024,
-                      "height": 1024,
-                      "size_cond_factor": 4,
-                      "text": custom_prompt.replace(/(\r\n|\n|\r)/gm, " "),
-                      "clip": [
-                        "1",
-                        1
-                      ]
-                    },
-                    "class_type": "CLIPTextEncodeSDXL+",
-                    "_meta": {
-                      "title": "🔧 SDXLCLIPTextEncode"
-                    }
-                  };
-                wf["21"] = {
-                    "inputs": {
-                      "conditioning_to": [
-                        "20",
-                        0
-                      ],
-                      "conditioning_from": [
-                        "4",
-                        0
-                      ]
-                    },
-                    "class_type": "ConditioningConcat",
-                    "_meta": {
-                      "title": "Conditioning (Concat)"
-                    }
-                  };
-                  wf['7']['inputs']['positive'] = ["21", 0];
-            }
-
-            // update the workflow with the selected parameters
-            wf['1']['inputs']['ckpt_name'] = available_checkpoints[model];
-            wf['7']['inputs']["sampler_name"] = sampler_name;
-            wf['7']['inputs']["scheduler"] = scheduler;    
-            wf['7']['inputs']['seed'] = rndseed;
-            wf['7']['inputs']['steps'] = base_steps + Math.round(quality_input.value * step_increment);
-            wf['7']['inputs']['cfg'] = CFG;
-            wf['6']['inputs']['batch_size'] = batch_size_input.value;
-            wf['4']['inputs']['text'] = positive;
-            wf['5']['inputs']['text'] = negative;
-
+            // Queue the prompt
             timerStart();
-            response = await queue_prompt(wf);
-            wf = null;
+            const response = await queue_prompt(wf);
 
             if ('error' in response) {
-                IS_GENERATING = false;
-                toggleDisplay(spinner, IS_GENERATING)
-                toggleDisplay(roll_icon, !IS_GENERATING)
-                updateProgress();
-                _('#modal-message').innerHTML = response['error']['message'];
-                UIkit.modal(modal).show();
-                console.log('Error: ' + response['error']['message']);
+                throw new Error(response.error.message);
             }
+
+        } catch (error) {
+            console.error("Generation error:", error);
+            IS_GENERATING = false;
+            toggleDisplay(spinner, IS_GENERATING);
+            toggleDisplay(roll_icon, !IS_GENERATING);
+            updateProgress();
+            _('#modal-message').innerHTML = error.message;
+            UIkit.modal(modal).show();
         }
     });
 
@@ -526,4 +321,3 @@
     });
 
 })(window, document, undefined);
-
