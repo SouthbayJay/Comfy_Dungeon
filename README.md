@@ -1,3 +1,6 @@
+# Flux Development Branch
+This branch is a work in progress to integrate Flux architecture into the Comfy Dungeon project. It will probably not stay as a D&D character generator but not 100% sure yet what it will become.
+
 # Comfy Dungeon
 Build D&D Character Portraits with ComfyUI.
 
