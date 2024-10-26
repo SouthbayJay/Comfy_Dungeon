@@ -78,7 +78,7 @@
     const available_checkpoints = await get_checkpoints();
 
     const positive_template = "{{SETTING}} {{STYLE}} closeup of a {{AGE}} {{BODY}}{{ETHNICITY}}{{RACE}} {{GENDER}} {{CLASS}}{{HAIR_COLOR}}{{HAIRSTYLE}}{{GEAR}}.{{RACE_HELPER}}{{BACKGROUND}} High quality, detailed, high resolution{{SETTING_HELPER}}.{{MOOD}}{{ATMOSPHERE}}";
-    const negative_template = "{{STYLE}}{{RACE}}rendering, blurry, noisy, deformed, text, {{GENDER}}scars, blood, dirty, nipples, naked, boobs, cleavage, face mask, Christmas, garden, zippers, ill, lazy eye, {{BACKGROUND}} author, signature, 3d";
+   // const negative_template = "{{STYLE}}{{RACE}}rendering, blurry, noisy, deformed, text, {{GENDER}}scars, blood, dirty, nipples, naked, boobs, cleavage, face mask, Christmas, garden, zippers, ill, lazy eye, {{BACKGROUND}} author, signature, 3d";
 
     const ethnicities = {
         "1": ["Eritrean", "Djiboutian", "Ethiopian", "Somali", "Kenyan", "Ugandan", "Rwandan", "Burundian", "Tanzanian", "Malagasy", "Mauritian", "Seychellois"],
@@ -239,7 +239,7 @@
 
             // Process prompts
             let positive = positive_template;
-            let negative = negative_template;
+           // let negative = negative_template;
             
             // Replacement values
             const replacements = {
@@ -261,12 +261,12 @@
             // Replace all placeholders, ensuring proper spacing around values
             for (let key in replacements) {
                 positive = positive.replace(new RegExp(key, 'g'), ` ${replacements[key]} `);
-                negative = negative.replace(new RegExp(key, 'g'), ` ${replacements[key]} `);
+           //     negative = negative.replace(new RegExp(key, 'g'), ` ${replacements[key]} `);
             }
 
             // Remove any extra spaces that might be added inadvertently
             positive = positive.replace(/\s+/g, ' ').trim();
-            negative = negative.replace(/\s+/g, ' ').trim();
+          //  negative = negative.replace(/\s+/g, ' ').trim();
 
             // Set style based on flags
             let style = is_cinematic ? 'film still cinematic photo' :
@@ -277,14 +277,14 @@
                                 'photo, anime, ';
 
             positive = positive.replace(/{{STYLE}}/g, style);
-            negative = negative.replace(/{{STYLE}}/g, negative_style);
+         //   negative = negative.replace(/{{STYLE}}/g, negative_style);
 
             // Set the prompts in workflow
             wf['6']['inputs']['text'] = positive;
-            wf['33']['inputs']['text'] = negative;
+       //     wf['33']['inputs']['text'] = negative;
 
             console.log("Constructed positive prompt:", positive); // Debug: Constructed prompt output
-            console.log("Constructed negative prompt:", negative); // Debug: Constructed negative prompt
+           // console.log("Constructed negative prompt:", negative); // Debug: Constructed negative prompt
 
             console.log("Attempting to queue the prompt..."); // Debug: Before queuing
 
