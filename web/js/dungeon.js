@@ -105,7 +105,6 @@
         "18": ["Austrian", "Belgian", "Dutch", "French", "German", "Liechtensteiner", "Luxembourger", "Monacan", "Swiss"],
         "19": ["Icelandic", "Irish", "Manx", "British"],
 
-        //"20": ["Cuban", "Dominican", "Haitian", "Jamaican", "Puerto Rican", "Trinidadian"],
         "21": ["Fijian", "Papua New Guinean", "Solomon Islander", "Vanuatuan", "Kiribati", "Marshallese", "Micronesian", "Nauruan", "Palauan", "Samoan", "Tongan", "Tuvaluan"],
     }
 
@@ -181,6 +180,8 @@
             return;
         }
 
+        console.log("Roll button clicked, starting generation..."); // Debug: Button click event tracked
+
         IS_GENERATING = true;
         toggleDisplay(spinner, IS_GENERATING);
         toggleDisplay(roll_icon, !IS_GENERATING);
@@ -205,6 +206,9 @@
 
             console.log("Cleaned model name:", model); // Debug log
             console.log("Available checkpoints:", available_checkpoints); // Debug log
+            console.log("Setting input value:", setting_input ? setting_input.value : "undefined");
+            console.log("Age input value:", age_input ? age_input.value : "undefined");
+            console.log("Body structure value:", body_structure_input ? body_structure_input.value : "undefined");
 
             // Verify checkpoint exists
             if (!available_checkpoints[model]) {
@@ -237,6 +241,33 @@
             let positive = positive_template;
             let negative = negative_template;
             
+            // Replacement values
+            const replacements = {
+                '{{SETTING}}': setting_input ? setting_input.value : "undefined",
+                '{{AGE}}': age_input ? age_input.value : "undefined",
+                '{{BODY}}': body_structure_input ? body_structure_input.value : "undefined",
+                '{{GENDER}}': gender_input ? (gender_input.value == 1 ? 'female' : 'male') : "undefined",
+                '{{RACE}}': race_input ? race_input.value : "undefined",
+                '{{ETHNICITY}}': ethnicity_input ? ethnicity_input.options[ethnicity_input.selectedIndex].text : "",
+                '{{CLASS}}': class_input ? class_input.value : "undefined",
+                '{{HAIR_COLOR}}': haircolor_input ? haircolor_input.value : "",
+                '{{HAIRSTYLE}}': hairstyle_input ? hairstyle_input.value : "",
+                '{{GEAR}}': gear_input ? gear_input.value : "",
+                '{{BACKGROUND}}': background_input ? background_input.value : "",
+                '{{MOOD}}': mood_input ? mood_input.value : "",
+                '{{ATMOSPHERE}}': atmosphere_input ? atmosphere_input.value : ""
+            };
+
+            // Replace all placeholders, ensuring proper spacing around values
+            for (let key in replacements) {
+                positive = positive.replace(new RegExp(key, 'g'), ` ${replacements[key]} `);
+                negative = negative.replace(new RegExp(key, 'g'), ` ${replacements[key]} `);
+            }
+
+            // Remove any extra spaces that might be added inadvertently
+            positive = positive.replace(/\s+/g, ' ').trim();
+            negative = negative.replace(/\s+/g, ' ').trim();
+
             // Set style based on flags
             let style = is_cinematic ? 'film still cinematic photo' :
                        is_anime ? 'anime illustration' :
@@ -245,13 +276,17 @@
                                 is_anime ? 'photo, fanart, ' :
                                 'photo, anime, ';
 
-            // Update prompts
-            positive = positive.replace('{{STYLE}}', style);
-            negative = negative.replace('{{STYLE}}', negative_style);
+            positive = positive.replace(/{{STYLE}}/g, style);
+            negative = negative.replace(/{{STYLE}}/g, negative_style);
 
             // Set the prompts in workflow
             wf['6']['inputs']['text'] = positive;
             wf['33']['inputs']['text'] = negative;
+
+            console.log("Constructed positive prompt:", positive); // Debug: Constructed prompt output
+            console.log("Constructed negative prompt:", negative); // Debug: Constructed negative prompt
+
+            console.log("Attempting to queue the prompt..."); // Debug: Before queuing
 
             console.log("Final workflow before queue:", wf); // Debug log
 
