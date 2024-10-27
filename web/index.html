@@ -22,24 +22,18 @@
               <div class="uk-accordion-content uk-grid-small" uk-grid>
                 <div class="uk-width-1-2@s">
                   <label class="uk-form-label" for="quality-input">Quality</label>
-                  <input class="uk-range" id="quality-input" type="range" value="1" min="0.0" max="1.0" step="0.25" aria-label="Range">
+                  <input class="uk-range" id="quality-input" type="range" value="0.0" min="0.0" max="1.0" step="0.25" aria-label="Range">
                   <div class="uk-form-label uk-text-muted" uk-grid><div class="uk-width-1-2@s"><span uk-icon="icon: arrow-left"></span>Speed</div><div class="uk-width-1-2@s" style="text-align:right;">Accuracy<span uk-icon="icon: arrow-right"></span></div></div>
                 </div>
 
                 <div class="uk-width-1-2@s">
                   <label class="uk-form-label" for="batch-size-input">Results per generation</label>
-                  <input class="uk-range" id="batch-size-input" type="range" value="1" min="1" max="10" step="1" aria-label="Range" list="batch-size-values">
+                  <input class="uk-range" id="batch-size-input" type="range" value="1" min="1" max="4" step="1" aria-label="Range" list="batch-size-values">
                   <datalist id="batch-size-values" class="uk-form-label uk-text-muted">
                     <option value="0" label="1"></option>
                     <option value="33" label="2"></option>
                     <option value="66" label="3"></option>
                     <option value="100" label="4"></option>
-                    <option value="133" label="5"></option>
-                    <option value="166" label="6"></option>
-                    <option value="200" label="7"></option>
-                    <option value="233" label="8"></option>
-                    <option value="266" label="9"></option>
-                    <option value="300" label="10"></option>
                   </datalist>
                 </div>
 
@@ -47,11 +41,11 @@
                   <label class="uk-form-label" for="style-input">Preset</label>
                   <div class="uk-form-controls">
                     <select class="uk-select" id="style-input" aria-label="Select">
-                      <option value="ProteusV0.3-LCM">Illustration - Fast</option>
-                      <option value="ProteusV0.3" selected>Illustration - Accurate</option>
-                      <option value="ProteusV0.3-LCM-Anime">Anime - Fast</option>
-                      <option value="ProteusV0.3-Anime">Anime - Accurate</option>
                       <option value="FluxSchnell-Cinematic">Cinematic</option>  <!-- Changed from DreamShaperXLTurboV2-Cinematic -->
+               <!--   <option value="ProteusV0.3-LCM">Illustration - Fast</option> 
+                      <option value="ProteusV0.3" selected>Illustration - Accurate</option>
+                     <option value="ProteusV0.3-LCM-Anime">Anime - Fast</option>
+                      <option value="ProteusV0.3-Anime">Anime - Accurate</option> -->
                     </select>
                   </div>
                 </div>  
@@ -328,7 +322,8 @@
       <progress id="main-progress" class="progress" value="0" max="0"></progress>
 
       <div class="uk-text-center uk-container uk-container-expand">
-        <form><button id="roll" class="uk-button uk-button-danger" type="button"><span id="main-spinner" uk-spinner="ratio: 0.7" style="display: none;"></span><span id="roll-icon" uk-icon="icon: bolt"></span>&nbsp;Roll</button><input id="main-seed" class="uk-input" type="text" placeholder="Seed" aria-label="Seed" value="0"><label>Random <input id="is-random" class="uk-checkbox" type="checkbox" checked></label></form>
+        <form><button id="roll" class="uk-button uk-button-danger" type="button"><span id="main-spinner" uk-spinner="ratio: 0.7" style="display: none;"></span><span id="roll-icon" uk-icon="icon: bolt"></span>&nbsp;Roll</button>
+          <input id="main-seed" class="uk-input" type="text" placeholder="Seed" aria-label="Seed" value="0"><label>Random <input id="is-random" class="uk-checkbox" type="checkbox" checked></label></form>
       </div>
 
       <div id="results" class="uk-child-width-expand uk-text-center" uk-grid uk-lightbox></div>
